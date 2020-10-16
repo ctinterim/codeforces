@@ -132,10 +132,21 @@ int main() {
 
 	int i = 0;
 	unsigned int last_is_k_palindrome = 0;
+	int is_k_palindrome_log_val = 1;
+	int cur_log = 1;
+	int cur_count = 1;
 	// 1. repeating first character
 	while (input[i] == input[0]) {
-		is_k_palindrome[i] = ((i + 1) / 2) + 1;
+		is_k_palindrome[i] = is_k_palindrome_log_val;
 		last_is_k_palindrome = is_k_palindrome[i];
+
+		--cur_count;
+		if (cur_count == 0) {
+			++is_k_palindrome_log_val;
+			cur_log *= 2;
+			cur_count = cur_log;
+		}
+
 		++i;
 	}
 	// 2. calculate k-palindrome based on first repeating section
