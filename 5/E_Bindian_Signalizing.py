@@ -25,9 +25,9 @@ if __name__ == '__main__':
 	L_numsame = [0]*len(chain)
 
 	R = [0]*len(chain)
-	R_visited = [False]*len(chain)
+	R_hi = [len(chain)-1]*len(chain)
 
-	# calculate left
+	# calculate left to right
 	for i in range(1,len(chain)-1):
 		if i == len(chain)-2:
 			L[i] = 1
@@ -58,34 +58,34 @@ if __name__ == '__main__':
 		if (L_numsame[i] > 0 and chain[i] == chain[i+1]):
 			L[i] -= 1
 		# if neighbor is higher, and the value is actually bigger, then it is duplicate so erase
-		if i+1 == higher and chain[i] < chain[higher]:
+		if i+1 == L_hi[i] and chain[i] < chain[L_hi[i]]:
 			L[i] -= 1
 
-	# calculate right
+	# calculate right to left
 	for i in range(len(chain)-2, 0, -1):
-		if R_visited[i]:
-			continue
+		if R_hi[i] == len(chain)-1:
+			same = []
+			higher = 0
+			for j in range(i-1, -1, -1):
+				if j != 0 and chain[i] == chain[j]:
+					same.append(j)
+				elif chain[i] < chain[j]:
+					higher = j
+					break
 
-		R_visited[i] = True
-		same = []
-		higher = 0
-		for j in range(i-1, -1, -1):
-			if j != 0 and chain[i] == chain[j]:
-				same.append(j)
-			elif chain[i] < chain[j]:
-				higher = j
-				break
+			R_hi[i] = higher
+			for s in same:
+				R_hi[s] = higher
+	
+		R[i] = 1 # connection with strictly higher
 
-		R[i] = 1
-		if (i != 1 and higher == i-1) or (L_hi[i] == len(chain)-1 and higher == 0):
+		if chain[i] == maxh:
 			R[i] = 0
-
-		for s in same:
-			R_visited[s] = True
-			if higher == s-1:
-				R[s] = 0
-			else:
-				R[s] = R[i]
+		elif R_hi[i] == 0 and L_hi[i] == len(chain)-1: # if l->r higher was right end and r->l higher is left end, do not add
+			R[i] = 0
+		elif i > 1 and R_hi[i] == i-1: # if strictly higher is neighbor, do not add
+			R[i] = 0
+		
 
 	# print('L')
 	# for i in range(len(chain)):
