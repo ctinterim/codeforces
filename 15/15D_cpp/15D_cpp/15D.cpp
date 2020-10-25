@@ -5,19 +5,19 @@
 #define MAX_N 1000
 
 typedef struct _PMNode {
-	int val = 2000000000;
-	int lowerend = -1;
-	int upperend = -1;
+	int val;
+	int lowerend;
+	int upperend;
 } PMNode;
 
 PMNode pmRCTree1D[MAX_N][MAX_PARTIAL_MIN_MATRIX_LENGTH];  // (24MB) DS for partial min 1D (col)
-int min1DMatrix[MAX_N][MAX_N] = { 2000000000 };  //  (4MB) minimum value in 1*b window starting from left
+int min1DMatrix[MAX_N][MAX_N];  //  (4MB) minimum value in 1*b window starting from left
 
 PMNode pmCRTree2D[MAX_N][MAX_PARTIAL_MIN_MATRIX_LENGTH];  // (24MB) DS for partial min 2D where column length is always b (row*col)
-int min2DMatrix[MAX_N][MAX_N] = { 2000000000 };  //  (4MB) minimum value in a*b window starting from upper left
+int min2DMatrix[MAX_N][MAX_N];  //  (4MB) minimum value in a*b window starting from upper left
 
-int bSum[MAX_N][MAX_N] = { 2000000000 };         //  (4MB) 1Xb sum starting at left
-int abSum[MAX_N][MAX_N] = { 2000000000 };        //  (4MB) aXb sum starting at upper left
+int bSum[MAX_N][MAX_N];         //  (4MB) 1Xb sum starting at left
+int abSum[MAX_N][MAX_N];        //  (4MB) aXb sum starting at upper left
 
 int nearestPowerOf2(int val) {
 	int ret = 1;
@@ -31,7 +31,7 @@ void buildPartialMinTree(PMNode* tree, const int leaflength) {
 	int start = leaflength;
 	int end = leaflength * 2;
 
-	while (start > 0) {
+	while (start > 1) {
 		for (int i = start; i < end; i += 2) {
 			PMNode& lower = tree[i];
 			PMNode& upper = tree[i + 1];
@@ -48,10 +48,9 @@ void buildPartialMinTree(PMNode* tree, const int leaflength) {
 }
 
 int partialMin(PMNode* tree, const int leaflength, int startingposition, int windowsize) {
-	int minval = tree[startingposition].val;
-	int start = leaflength + startingposition; // must add leaflength!!!
-	// inclusive end
-	int iend = startingposition + windowsize - 1;
+	int start = leaflength + startingposition;    // must add leaflength!!!
+	int iend  = start + windowsize - 1; // inclusive end
+	int minval = tree[start].val;
 	int curpos = start;
 	bool goup = true;
 
@@ -125,10 +124,17 @@ int main() {
 			pmRCTree1D[row][treeend_col + col].lowerend = treeend_col + col;
 			pmRCTree1D[row][treeend_col + col].upperend = treeend_col + col;
 		}
+		for (int col = m; col < treeend_col; ++col) {
+			pmRCTree1D[row][treeend_col + col].val = 2000000000;
+			pmRCTree1D[row][treeend_col + col].lowerend = treeend_col + col;
+			pmRCTree1D[row][treeend_col + col].upperend = treeend_col + col;
+		}
 	}
+
 	for (int row = 0; row < n; ++row) {
 		buildPartialMinTree(pmRCTree1D[row], treeend_col);
 	}
+	
 	for (int row = 0; row < n; ++row) {
 		for (int col = 0; col <= m-b; ++col) {
 			min1DMatrix[row][col] = partialMin(pmRCTree1D[row], treeend_col, col, b);
@@ -142,6 +148,11 @@ int main() {
 			pmCRTree2D[col][treeend_row + row].lowerend = treeend_row + row;
 			pmCRTree2D[col][treeend_row + row].upperend = treeend_row + row;
 		}
+		for (int row = n; row < treeend_row; ++row) {
+			pmCRTree2D[col][treeend_row + row].val = 2000000000;
+			pmCRTree2D[col][treeend_row + row].lowerend = treeend_row + row;
+			pmCRTree2D[col][treeend_row + row].upperend = treeend_row + row;
+		}
 	}
 	for (int col = 0; col <= m-b; ++col) {
 		buildPartialMinTree(pmCRTree2D[col], treeend_row);
@@ -151,6 +162,15 @@ int main() {
 			min2DMatrix[row][col] = partialMin(pmCRTree2D[col], treeend_row, row, a);
 		}
 	}
+
+	/*
+	for (int row = 0; row <= n - a; ++row) {
+		for (int col = 0; col <= m - b; ++col) {
+			std::cout << min2DMatrix[row][col] << " ";
+		}
+		std::cout << std::endl;
+	}
+	*/
 
 	return 0;
 }
