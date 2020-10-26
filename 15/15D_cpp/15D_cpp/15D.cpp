@@ -1,4 +1,6 @@
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 #define MAX_LEAF_LENGTH 1024
 #define MAX_PARTIAL_MIN_MATRIX_LENGTH (MAX_LEAF_LENGTH * 2)
@@ -10,14 +12,38 @@ typedef struct _PMNode {
 	int upperend;
 } PMNode;
 
+typedef struct _CNode {
+	long long cost;
+	int row;
+	int col;
+} CNode;
+
+int inputMatrix[MAX_N][MAX_N];                            //  (4MB)
 PMNode pmRCTree1D[MAX_N][MAX_PARTIAL_MIN_MATRIX_LENGTH];  // (24MB) DS for partial min 1D (col)
-int min1DMatrix[MAX_N][MAX_N];  //  (4MB) minimum value in 1*b window starting from left
+int min1DMatrix[MAX_N][MAX_N];                            //  (4MB) minimum value in 1*b window starting from left
 
 PMNode pmCRTree2D[MAX_N][MAX_PARTIAL_MIN_MATRIX_LENGTH];  // (24MB) DS for partial min 2D where column length is always b (row*col)
-int min2DMatrix[MAX_N][MAX_N];  //  (4MB) minimum value in a*b window starting from upper left
+int min2DMatrix[MAX_N][MAX_N];                            //  (4MB) minimum value in a*b window starting from upper left
 
-int bSum[MAX_N][MAX_N];         //  (4MB) 1Xb sum starting at left
-int abSum[MAX_N][MAX_N];        //  (4MB) aXb sum starting at upper left
+long long bSum[MAX_N][MAX_N];                                   //  (4MB) 1Xb sum starting at left
+long long abSum[MAX_N][MAX_N];                                  //  (4MB) aXb sum starting at upper left
+
+char minMap[MAX_N][MAX_N] = { 0 };
+
+CNode costList[MAX_N*MAX_N + 100];
+int costListLength;
+CNode resultList[MAX_N*MAX_N + 100];
+int resultListLength;
+
+bool compareCNode(const CNode& a, const CNode& b) {
+	if (a.cost == b.cost) {
+		if (a.row == b.row) {
+			return a.col < b.col;
+		}
+		return a.row < b.row;
+	}
+	return a.cost < b.cost;
+}
 
 int nearestPowerOf2(int val) {
 	int ret = 1;
@@ -53,6 +79,15 @@ int partialMin(PMNode* tree, const int leaflength, int startingposition, int win
 	int minval = tree[start].val;
 	int curpos = start;
 	bool goup = true;
+
+	if (windowsize <= 10) {
+		for (int i = start+1; i <= iend; ++i) {
+			if (tree[i].val < minval) {
+				minval = tree[i].val;
+			}
+		}
+		return minval;
+	}
 
 	while (curpos != iend) {
 		// Have not found parent whose upperend contains iend yet
@@ -108,6 +143,30 @@ int partialMin(PMNode* tree, const int leaflength, int startingposition, int win
 	return minval;
 }
 
+void calculateBSum(const int n, const int m, const int b) {
+	for (int row = 0; row < n; ++row) {
+		bSum[row][0] = 0;
+		for (int col = 0; col < b; ++col) {
+			bSum[row][0] += inputMatrix[row][col];
+		}
+		for (int col = 1; col <= m-b; ++col) {
+			bSum[row][col] = bSum[row][col - 1] - inputMatrix[row][col - 1] + inputMatrix[row][col + b - 1];
+		}
+	}
+}
+
+void calculateABSum(const int n, const int m, const int a, const int b) {
+	for (int col = 0; col <= m - b; ++col) {
+		abSum[0][col] = 0;
+		for (int row = 0; row < a; ++row) {
+			abSum[0][col] += bSum[row][col];
+		}
+		for (int row = 1; row <= n - a; ++row) {
+			abSum[row][col] = abSum[row - 1][col] - bSum[row - 1][col] + bSum[row + a - 1][col];
+		}
+	}
+}
+
 int main() {
 	std::ios_base::sync_with_stdio(false);
 	int n, m, a, b; //n,a = row, m,b = col
@@ -120,7 +179,8 @@ int main() {
 
 	for (int row = 0; row < n; ++row) {
 		for (int col = 0; col < m; ++col) {
-			std::cin >> pmRCTree1D[row][treeend_col + col].val;
+			std::cin >> inputMatrix[row][col];
+			pmRCTree1D[row][treeend_col + col].val = inputMatrix[row][col];
 			pmRCTree1D[row][treeend_col + col].lowerend = treeend_col + col;
 			pmRCTree1D[row][treeend_col + col].upperend = treeend_col + col;
 		}
@@ -162,15 +222,81 @@ int main() {
 			min2DMatrix[row][col] = partialMin(pmCRTree2D[col], treeend_row, row, a);
 		}
 	}
+	
+	/*for (int r = 0; r < n; ++r) {
+		for (int c = 0; c < m; ++c) {
+			printf("%d ", min2DMatrix[r][c]);
+		}
+		printf("\n");
+	}
+	printf("\n");*/
 
-	/*
+	calculateBSum(n, m, b);
+	/*for (int r = 0; r < n; ++r) {
+		for (int c = 0; c < m; ++c) {
+			printf("%d ", bSum[r][c]);
+		}
+		printf("\n");
+	}
+	printf("\n");*/
+
+	calculateABSum(n, m, a, b);
+	/*for (int r = 0; r < n; ++r) {
+		for (int c = 0; c < m; ++c) {
+			printf("%d ", abSum[r][c]);
+		}
+		printf("\n");
+	}
+	printf("\n");*/
+
+	costListLength = 0;
 	for (int row = 0; row <= n - a; ++row) {
 		for (int col = 0; col <= m - b; ++col) {
-			std::cout << min2DMatrix[row][col] << " ";
+			int curidx = costListLength;
+			long long curmin2d = min2DMatrix[row][col];
+			costList[curidx].cost = abSum[row][col] - (curmin2d * a * b);
+			costList[curidx].row = row;
+			costList[curidx].col = col;
+
+			++costListLength;
 		}
-		std::cout << std::endl;
 	}
-	*/
+
+	std::sort(&costList[0], &costList[costListLength], compareCNode);
+
+	resultListLength = 0;
+	for (int i = 0; i < costListLength; ++i) {
+		CNode& curr = costList[i];
+
+		int u_lr = curr.row;
+		int u_lc = curr.col;
+
+		int u_rr = curr.row;
+		int u_rc = curr.col + (b - 1);
+
+		int d_lr = curr.row + (a - 1);
+		int d_lc = curr.col;
+
+		int d_rr = curr.row + (a - 1);
+		int d_rc = curr.col + (b - 1);
+
+		if ( (minMap[u_lr][u_lc] + minMap[u_rr][u_rc] + minMap[d_lr][d_lc] + minMap[d_rr][d_rc]) == 0) {
+			int ri = resultListLength;
+			resultList[ri] = curr;
+			for (int row = u_lr; row <= d_lr; ++row) {
+				for (int col = u_lc; col <= u_rc; ++col) {
+					minMap[row][col] = 1;
+				}
+			}
+			++resultListLength;
+		}
+	}
+
+	printf("%d\n", resultListLength);
+	for (int i = 0; i < resultListLength; ++i) {
+		printf("%d %d %lld\n", resultList[i].row + 1, resultList[i].col + 1, resultList[i].cost);
+	}
+
 
 	return 0;
 }
