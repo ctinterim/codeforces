@@ -1,4 +1,4 @@
-#include <iostream>
+#include <stdio.h>
 #include <vector>
 #include <algorithm>
 
@@ -62,7 +62,7 @@ void buildPartialMinTree(PMNode* tree, const int leaflength) {
 			PMNode& lower = tree[i];
 			PMNode& upper = tree[i + 1];
 			PMNode& parent = tree[i / 2];
-			
+
 			parent.val = (lower.val < upper.val) ? lower.val : upper.val;
 			parent.lowerend = lower.lowerend;
 			parent.upperend = upper.upperend;
@@ -75,13 +75,13 @@ void buildPartialMinTree(PMNode* tree, const int leaflength) {
 
 int partialMin(PMNode* tree, const int leaflength, int startingposition, int windowsize) {
 	int start = leaflength + startingposition;    // must add leaflength!!!
-	int iend  = start + windowsize - 1; // inclusive end
+	int iend = start + windowsize - 1; // inclusive end
 	int minval = tree[start].val;
 	int curpos = start;
 	bool goup = true;
 
 	if (windowsize <= 10) {
-		for (int i = start+1; i <= iend; ++i) {
+		for (int i = start + 1; i <= iend; ++i) {
 			if (tree[i].val < minval) {
 				minval = tree[i].val;
 			}
@@ -96,7 +96,7 @@ int partialMin(PMNode* tree, const int leaflength, int startingposition, int win
 			int rightchildpos = (parentpos * 2) + 1;
 			PMNode& parent = tree[parentpos];
 			PMNode& rightchild = tree[rightchildpos];
-			
+
 			if (curpos & 1) { //If current possition is right side, just go up
 				curpos = parentpos;
 			}
@@ -149,7 +149,7 @@ void calculateBSum(const int n, const int m, const int b) {
 		for (int col = 0; col < b; ++col) {
 			bSum[row][0] += inputMatrix[row][col];
 		}
-		for (int col = 1; col <= m-b; ++col) {
+		for (int col = 1; col <= m - b; ++col) {
 			bSum[row][col] = bSum[row][col - 1] - inputMatrix[row][col - 1] + inputMatrix[row][col + b - 1];
 		}
 	}
@@ -168,18 +168,17 @@ void calculateABSum(const int n, const int m, const int a, const int b) {
 }
 
 int main() {
-	std::ios_base::sync_with_stdio(false);
 	int n, m, a, b; //n,a = row, m,b = col
 	int treeend_col, treeend_row;
 
-	std::cin >> n >> m >> a >> b;
+	scanf_s("%d %d %d %d", &n, &m, &a, &b);
 
 	treeend_row = nearestPowerOf2(n);
 	treeend_col = nearestPowerOf2(m);
 
 	for (int row = 0; row < n; ++row) {
 		for (int col = 0; col < m; ++col) {
-			std::cin >> inputMatrix[row][col];
+			scanf_s("%d", &inputMatrix[row][col]);
 			pmRCTree1D[row][treeend_col + col].val = inputMatrix[row][col];
 			pmRCTree1D[row][treeend_col + col].lowerend = treeend_col + col;
 			pmRCTree1D[row][treeend_col + col].upperend = treeend_col + col;
@@ -194,15 +193,15 @@ int main() {
 	for (int row = 0; row < n; ++row) {
 		buildPartialMinTree(pmRCTree1D[row], treeend_col);
 	}
-	
+
 	for (int row = 0; row < n; ++row) {
-		for (int col = 0; col <= m-b; ++col) {
+		for (int col = 0; col <= m - b; ++col) {
 			min1DMatrix[row][col] = partialMin(pmRCTree1D[row], treeend_col, col, b);
 		}
 	}
 
 	//Note that we are swapping row and column at this point
-	for (int col = 0; col <= m-b; ++col) {
+	for (int col = 0; col <= m - b; ++col) {
 		for (int row = 0; row < n; ++row) {
 			pmCRTree2D[col][treeend_row + row].val = min1DMatrix[row][col];
 			pmCRTree2D[col][treeend_row + row].lowerend = treeend_row + row;
@@ -214,15 +213,15 @@ int main() {
 			pmCRTree2D[col][treeend_row + row].upperend = treeend_row + row;
 		}
 	}
-	for (int col = 0; col <= m-b; ++col) {
+	for (int col = 0; col <= m - b; ++col) {
 		buildPartialMinTree(pmCRTree2D[col], treeend_row);
 	}
-	for (int col = 0; col <= m-b; ++col) {
-		for (int row = 0; row <= n-a; ++row) {
+	for (int col = 0; col <= m - b; ++col) {
+		for (int row = 0; row <= n - a; ++row) {
 			min2DMatrix[row][col] = partialMin(pmCRTree2D[col], treeend_row, row, a);
 		}
 	}
-	
+
 	/*for (int r = 0; r < n; ++r) {
 		for (int c = 0; c < m; ++c) {
 			printf("%d ", min2DMatrix[r][c]);
@@ -280,7 +279,7 @@ int main() {
 		int d_rr = curr.row + (a - 1);
 		int d_rc = curr.col + (b - 1);
 
-		if ( (minMap[u_lr][u_lc] + minMap[u_rr][u_rc] + minMap[d_lr][d_lc] + minMap[d_rr][d_rc]) == 0) {
+		if ((minMap[u_lr][u_lc] + minMap[u_rr][u_rc] + minMap[d_lr][d_lc] + minMap[d_rr][d_rc]) == 0) {
 			int ri = resultListLength;
 			resultList[ri] = curr;
 			for (int row = u_lr; row <= d_lr; ++row) {
